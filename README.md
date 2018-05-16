@@ -4,13 +4,15 @@ Docker templates to create a SQL Server 2017 availability group solution with 3 
 
 ## How to create an AlwaysOn topology with 3 nodes using docker
 
-To deploy an AlwaysON topology from scratch, we have an [example image](##How_to_create_the_image_from_scratch) created to test the environment. You can create a complete environment by following the next steps:
+You can create a complete environment with 3 AlwaysOn nodes by following the next steps:
 
 1. Build the infrastructure (3 nodes named: sqlNode1, sqlNode2 and sqlNode3)
 
 ```cmd
 docker-compose build
 ```
+
+The [docker-compose](./docker-compose.yml) references the [following docker image](https://hub.docker.com/r/enriquecatala/sql2017_alwayson_node/). 
 
 2. Run the infrastructure
 
