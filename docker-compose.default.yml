@@ -3,7 +3,9 @@ version: '3'
 services:
   db1:
     container_name: sqlNode1
-    image: enriquecatala/sql2017_alwayson_node:latest
+    build:
+        context: .
+        dockerfile: Dockerfile
     hostname:
         sqlNode1
     domainname:
@@ -21,7 +23,9 @@ services:
 
   db2:
     container_name: sqlNode2
-    image: enriquecatala/sql2017_alwayson_node:latest
+    build:
+        context: .
+        dockerfile: Dockerfile
     hostname:
         sqlNode2
     domainname:
@@ -37,28 +41,9 @@ services:
     networks:
       - internal
 
-  db3:
-    container_name: sqlNode3
-    image: enriquecatala/sql2017_alwayson_node:latest
-    hostname:
-        sqlNode3
-    domainname:
-        enriquecatala.com
-    volumes:
-      - mssql-server-linux-datadb2:/var/opt/mssql/data/sqlNode3
-    environment:
-      MSSQL_SA_PASSWORD: "PaSSw0rd"
-      ACCEPT_EULA: "Y"
-    ports:
-      - "14333:1433"
-      - "15023:5022"
-    networks:
-      - internal
-
 volumes:
   mssql-server-linux-datadb1:
   mssql-server-linux-datadb2:
-  mssql-server-linux-datadb3:
   
 networks:
   internal:

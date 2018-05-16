@@ -2,7 +2,7 @@
 EXPOSE 1433
 EXPOSE 5022
 
-LABEL  "MAINTAINER" "Enrique Catalá <enrique@enriquecatala.com>"
+LABEL  "MAINTAINER" "Enrique Catalá <enrique@enriquecatala.com> | <ecatala@solidq.com> | @enriquecatala"
 LABEL "Project" "SQL Server 2017 AlwaysOn Demo Node"
 
 

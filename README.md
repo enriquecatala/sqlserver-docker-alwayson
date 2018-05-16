@@ -1,13 +1,129 @@
 # sqlserver-docker-alwayson
-Docker templates to create a SQL Server 2017 availability group solution
 
-## How to deploy an Availability Group with _n_ nodes with Docker and compose
+Docker templates to create a SQL Server 2017 availability group solution with 3 nodes
 
+## How to create an AlwaysOn topology with 3 nodes using docker
 
+To deploy an AlwaysON topology from scratch, we have an [example image](##How_to_create_the_image_from_scratch) created to test the environment. You can create a complete environment by following the next steps:
 
+1. Build the infrastructure (3 nodes named: sqlNode1, sqlNode2 and sqlNode3)
 
+```cmd
+docker-compose build
+```
+
+2. Run the infrastructure
+
+```cmd
+docker-compose up
+```
+
+_Now, you have a 3 node sharing the network and prepared to be part of a new availability group_
+
+3. Connect to sqlNode1 (for example) and [create the availability group](###Create_availability_group)
+
+_NOTE: You can [add manually more nodes](###Add_extra_nodes_to_the_availability_group) (up to 9)_
+
+4. Connect to sqlNode2 and sqlNode3 and [join the node to the AG1](###Join_node_to_availability_group)
+
+_Now, AlwaysOn AG1 **is up and running**, waiting for new databases to be part of it :)_
+
+5. [Add databases to the availability group](###Add_databases_to_the_availability_group)
+
+### Add databases to the availability group
+
+If you have the alwayson configured, now you can add databases to the availability group by executing the following code:
+
+```sql
+ALTER AVAILABILITY GROUP [ag1] ADD DATABASE YourDatabase
+GO
+```
+
+_NOTE: Database must exist at primary node and must have a full backup_
+
+### Create availability group
+
+To create the availability group with only one node, please connect to the instance that will be node 1 and execute the following code:
+
+```sql
+CREATE AVAILABILITY GROUP [AG1]
+    WITH (CLUSTER_TYPE = NONE)
+    FOR REPLICA ON
+    N'sqlNode1'
+        WITH (
+        ENDPOINT_URL = N'tcp://sqlNode1:5022',
+        AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,
+            SEEDING_MODE = AUTOMATIC,
+            FAILOVER_MODE = MANUAL,
+        SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+            ),
+    N'sqlNode2'
+        WITH (
+        ENDPOINT_URL = N'tcp://sqlNode2:5022',
+        AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,
+            SEEDING_MODE = AUTOMATIC,
+            FAILOVER_MODE = MANUAL,
+        SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+            ),
+    N'sqlNode3'
+        WITH (
+        ENDPOINT_URL = N'tcp://sqlNode3:5022',
+        AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,
+            SEEDING_MODE = AUTOMATIC,
+            FAILOVER_MODE = MANUAL,
+        SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+            )
+```
+
+### Add extra nodes to the availability group
+
+More nodes (up to 9) can be added to this topology with the following code:
+
+1. Execute the following code against the new node you want to add
+
+```sql
+DECLARE @servername AS sysname
+SELECT @servername=CAST( SERVERPROPERTY('ServerName') AS sysname)
+
+DECLARE @cmd AS VARCHAR(MAX)
+
+SET @cmd ='
+ALTER AVAILABILITY GROUP [AG1]    
+    ADD REPLICA ON
+        N''<SQLInstanceName>''
+     WITH (
+        ENDPOINT_URL = N''tcp://<SQLInstanceName>:5022'',
+        AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,
+         SEEDING_MODE = AUTOMATIC,
+         FAILOVER_MODE = MANUAL,
+        SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
+         )
+';
+
+DECLARE @create_ag AS VARCHAR(MAX)
+SELECT @create_ag = REPLACE(@cmd,'<SQLInstanceName>',@servername)
+
+-- NOW, go to primary replica and execute the output script generated
+--
+PRINT @create_ag
+```
+
+2. Copy the output script and execute it against the primary node of your topology
+
+### Join node to availability group
+
+The last part is to join each secondary node to the availability group by executing the following command:
+
+```sql
+ALTER AVAILABILITY GROUP [ag1] JOIN WITH (CLUSTER_TYPE = NONE)
+ALTER AVAILABILITY GROUP [ag1] GRANT CREATE ANY DATABASE
+GO
+```
+_execute against the secondary node you want to add_
 
 ## How to create the image from scratch
+
+The image used at https://hub.docker.com/r/enriquecatala/sql2017_alwayson_node/ has been created by following the steps:
 
 1. Connect to any SQL Server 2017 and execute this to create the certificate with private key
 
@@ -78,68 +194,38 @@ GRANT CONNECT ON ENDPOINT::[Hadr_endpoint] TO [dbm_login]
 GO
 ```
 
-5. Create the availability group with only one node
+5. Stop the docker container
 
-```sql
-DECLARE @servername AS sysname
-SELECT @servername=name FROM sys.servers
-
-DECLARE @cmd AS VARCHAR(MAX)
-
-SET @cmd ='
-CREATE AVAILABILITY GROUP [AG1]
-    WITH (CLUSTER_TYPE = NONE)
-    FOR REPLICA ON
-        N''<SQLInstanceName>''
-     WITH (
-        ENDPOINT_URL = N''tcp://<SQLInstanceName>:5022'',
-        AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT,
-         SEEDING_MODE = AUTOMATIC,
-         FAILOVER_MODE = MANUAL,
-        SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL)
-         )
-';
-
-DECLARE @create_ag AS VARCHAR(MAX)
-SELECT @create_ag = REPLACE(@cmd,'<SQLInstanceName>',@servername)
-
-PRINT @create_ag
-
--- Finally, create the Availability group, but with only one node
-EXEC(@create_ag)
-```
-
-6. Stop the docker container
-
-7. Search for the _CONTAINER ID_ that we want to create as a new image
+6. Search for the _CONTAINER ID_ that we want to create as a new image
 
 ```cmd
 docker container list -a
 ```
 
-8. Commit the container as a new image
+7. Commit the container as a new image
 
 ```cmd
 docker commit 17fed7500df3 sql2017_alwayson_node 
 ```
 
-9. Search for the _IMAGE ID_ of the new image created in the previous step
+8. Search for the _IMAGE ID_ of the new image created in the previous step
 
 ```cmd
 docker image list
 ```
 
-10. Put a tag to the image
+9. Put a tag to the image
 
 ```cmd
 docker tag 530873517958 enriquecatala/sql2017_alwayson_node:latest
 ```
 
-11. Push to your repository
+10. Push to your repository
 
 ```cmd
 docker push enriquecatala/sql2017_alwayson_node
 ```
+
 
 ### References
 
