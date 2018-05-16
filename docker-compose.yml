@@ -1,0 +1,49 @@
+version: '3'
+
+services:
+  db1:
+    container_name: sqlNode1
+    build:
+        context: .
+        dockerfile: Dockerfile
+    hostname:
+        sqlNode1
+    domainname:
+        enriquecatala.com
+    volumes:
+      - mssql-server-linux-datadb1:/var/opt/mssql/data/sqlNode1
+    environment:
+      MSSQL_SA_PASSWORD: "PaSSw0rd"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "14331:1433"
+      - "15021:5022"
+    networks:
+      - internal
+
+  db2:
+    container_name: sqlNode2
+    build:
+        context: .
+        dockerfile: Dockerfile
+    hostname:
+        sqlNode2
+    domainname:
+        enriquecatala.com
+    volumes:
+      - mssql-server-linux-datadb2:/var/opt/mssql/data/sqlNode2
+    environment:
+      MSSQL_SA_PASSWORD: "PaSSw0rd"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "14332:1433"
+      - "15022:5022"
+    networks:
+      - internal
+
+volumes:
+  mssql-server-linux-datadb1:
+  mssql-server-linux-datadb2:
+  
+networks:
+  internal:
